@@ -124,6 +124,7 @@
     let gameInterval;
     let gameSpeedDelay = 200;
     let gameStarted = false;
+    let high = 0;
 
     function draw() {
         board.innerHTML = '';
@@ -237,8 +238,8 @@
 
     function updateHighScore() {
         const currentScore = snake.length - 1;
-        const high = 0;
         if (currentScore > high) {
+            high = currentScore;
             highScore.innerHTML = `High Score: ${currentScore.toString().padStart(3, '0')}`;
         }
     }
