@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;400&display=swap" rel="stylesheet">
+    <title>Snake Game</title>
+</head>
+<style>
+    * {
+        box-sizing: border-box;
+        font-family: 'Poppins', sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+    body {
+        background: darkseagreen;
+        letter-spacing: 2px;
+        word-spacing: 0.5rem;
+    }
+    #container {
+        display: flex;
+        height: 100%;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    .header h1{
+        margin: 30px 0 50px 0;
+    }
+    .header {
+        margin-bottom: 30px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    #board {
+        border: 20px solid beige;
+        box-shadow: 0 0 0 10px beige;
+        border-radius: 30px;
+        margin: 5px;
+    }
+    #grid {
+        display: grid;
+        grid-template-columns: repeat(20, 20px);
+        grid-template-rows: repeat(20, 20px);
+    }
+    .snake {
+        background: #ffff99;
+    }
+
+    .food {
+        background: red;
+    }
+    #result {
+        margin-top: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #222222;
+        color: white;
+        font-size: 1.5rem;
+        width: 500px;
+        padding: 20px;
+        border-radius: 20px;
+    }
+    #score, #highScore {
+        display: flex;
+    }
+    #press::after {
+        content: '';
+        width: 80%;
+        height: 5px;
+        display: block;
+        background: #1a1c1e;
+        margin: 10px auto 0 auto;
+    }
+    #press {
+        font-size: 1.8rem;
+    }
+    .space {
+        color: beige;
+        display: inline-block;
+        animation: jump 2s ease-out infinite;
+    }
+    @keyframes jump {
+        0%,40%,100%{
+            transform: translateY(0);
+        }
+        20%{
+            transform: translateY(-30px);
+        }
+    }
+</style>
+<body>
+<div id="container">
+    <div class="header">
+        <h1>Snake Game</h1>
+        <h3 id="press">Press <span class="space">Space</span> to Start</h3>
+    </div>
+    <div id="board">
+        <div id="grid"></div>
+    </div>
+    <div id="result">
+        <span id="score">Score: 000</span>
+        <span id="highScore">High Score: 000</span>
+    </div>
+</div>
+</body>
+<script>
+    const board = document.getElementById('grid');
+    const pressTab = document.getElementById('press')
+    const score = document.getElementById('score');
+    const highScore = document.getElementById('highScore')
+    let snake = [{x: 10, y: 10}];
+    const gridSize = 20;
+    let food = generateFood();
+    let direction = "right"
+    let gameInterval;
+    let gameSpeedDelay = 200;
+    let gameStarted = false;
+
+    function draw() {
+        board.innerHTML = '';
+        drawSnake();
+        drawFood();
+    }
+
+    function drawSnake() {
+        snake.forEach((segment) => {
+            const snakeElement = createGameElement('div', 'snake');
+            setPosition(snakeElement, segment);
+            board.appendChild(snakeElement);
+        })
+    }
+
+    function createGameElement(tag, className) {
+        const element = document.createElement(tag);
+        element.className = className;
+        return element;
+    }
+
+    function setPosition(element, position) {
+        element.style.gridColumn = position.x;
+        element.style.gridRow = position.y;
+    }
+
+    function drawFood() {
+        if (gameStarted) {
+            const foodElement = createGameElement('div', 'food')
+            setPosition(foodElement, food);
+            board.appendChild(foodElement);
+        }
+    }
+
+    function generateFood() {
+        const x = Math.floor(Math.random() * gridSize) + 1;
+        const y = Math.floor(Math.random() * gridSize) + 1;
+        return {x, y};
+    }
+
+    function move() {
+        const head = {...snake[0]};
+        switch (direction) {
+            case "right":
+                head.x++;
+                break;
+            case "left":
+                head.x--;
+                break;
+            case "up":
+                head.y--;
+                break;
+            case "down":
+                head.y++;
+                break;
+        }
+        snake.unshift(head);
+
+        if (head.x === food.x && head.y === food.y) {
+            food = generateFood();
+            increaseSpeed();
+            clearInterval(gameInterval);
+            gameInterval = setInterval(() => {
+                move();
+                checkCollision();
+                draw();
+                updateScore();
+            }, gameSpeedDelay)
+        } else {
+            snake.pop();
+        }
+    }
+
+    function startGame() {
+        gameStarted = true;
+        pressTab.innerHTML = "";
+        gameInterval = setInterval(() => {
+            move();
+            checkCollision();
+            draw();
+        }, gameSpeedDelay)
+    }
+
+    function checkCollision() {
+        const head = snake[0];
+        if (head.x < 1 || head.x > gridSize || head.y < 1 || head.y > gridSize) {
+            resetGame();
+        }
+        for (let i = 1; i < snake.length; i++) {
+            if (head.x === snake[i].x && head.y === snake[i].y) {
+                resetGame();
+            }
+        }
+    }
+
+    function resetGame() {
+        updateHighScore();
+        snake = [{x: 10, y: 10}];
+        food = generateFood();
+        direction = "right";
+        gameSpeedDelay = 200;
+        updateScore();
+        pressTab.innerHTML = `Press <span class="space">Space</span> to Start`;
+        stopGame();
+    }
+
+    function updateScore() {
+        const currentScore = snake.length - 1;
+        score.textContent = `Score: ${currentScore.toString().padStart(3, '0')}`;
+    }
+
+    function updateHighScore() {
+        const currentScore = snake.length - 1;
+        const high = 0;
+        if (currentScore > high) {
+            highScore.innerHTML = `High Score: ${currentScore.toString().padStart(3, '0')}`;
+        }
+    }
+
+    function stopGame() {
+        clearInterval(gameInterval);
+        gameStarted = false;
+    }
+
+    function handleKeyPress(e) {
+        if ((!gameStarted && e.code === "Space") ||
+            (!gameStarted && e.key === " ")) {
+            startGame();
+        } else {
+            switch (e.key) {
+                case "ArrowUp":
+                    direction = "up";
+                    break;
+                case "ArrowDown":
+                    direction = "down";
+                    break;
+                case "ArrowLeft":
+                    direction = "left";
+                    break;
+                case "ArrowRight":
+                    direction = "right";
+                    break;
+            }
+        }
+    }
+
+    function increaseSpeed() {
+        if (gameSpeedDelay > 150) {
+            gameSpeedDelay -= 5;
+        } else if (gameSpeedDelay > 100) {
+            gameSpeedDelay -= 2;
+        }
+    }
+
+    document.addEventListener('keydown', handleKeyPress);
+</script>
+</html>
